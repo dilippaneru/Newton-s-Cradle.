@@ -1,0 +1,184 @@
+#ifndef SCANRASTER_H
+#define SCANRASTER_H
+#include"mymath.h"
+
+class Edge
+{
+public:
+    vec3 Color1, Color2;
+    int X1, Y1, X2, Y2;
+    Edge( const vec3 &color1, int x1, int y1, const vec3 &color2, int x2, int y2);
+};
+
+
+void Triangle( vec3 &color1, int x1, int y1,
+               vec3 &color2, int x2, int y2,
+               vec3 &color3, int x3, int y3);
+
+void DrawBetweenEdges(Edge, Edge);
+
+
+
+Edge::Edge( const vec3 &color1, int x1, int y1,
+            const vec3 &color2, int x2, int y2)
+{
+    vec3 Color1,Color2;
+    if(y1 < y2)
+    {
+        Color1 = color1;
+        X1 = x1;
+        Y1 = y1;
+        Color2 = color2;
+        X2 = x2;
+        Y2 = y2;
+    }
+    else
+    {
+        Color1 = color2;
+        X1 = x2;
+        Y1 = y2;
+        Color2 = color1;
+        X2 = x1;
+        Y2 = y1;
+    }
+}
+
+
+void Triangle( const vec3 &color1, int x1, int y1,
+               const vec3 &color2, int x2, int y2,
+              const vec3 &color3, int x3, int y3)
+{
+    // create edges for the triangle
+    glColor3f(color1.x,color2.y,color3.z);
+   // glColor3f(0.0,1.0,0.0);
+     Edge edges[3]
+      ={Edge(color1, x1, y1, color2, x2, y2),
+        Edge(color2, x2, y2, color3, x3, y3),
+        Edge(color3, x3, y3, color1, x1, y1)};
+    edges[0].Color1=color1;
+    edges[0].Color2=color2;
+    edges[1].Color1=color2;
+    edges[1].Color2=color3;
+    edges[2].Color1=color3;
+    edges[2].Color2=color1;
+
+   // sle td::cout<<edges[0].Color1.x;
+    int maxLength = 0;
+    int longEdge = 0;
+
+    // find edge with the greatest length in the y axis
+    for(int i = 0; i < 3; i++)
+    {
+        int length = edges[i].Y2 - edges[i].Y1;
+        if(length > maxLength)
+        {
+            maxLength = length;
+            longEdge = i;
+        }
+    }
+
+    int shortEdge1 = (longEdge + 1) % 3;
+    int shortEdge2 = (longEdge + 2) % 3;
+    DrawBetweenEdges(edges[longEdge], edges[shortEdge1]);
+    DrawBetweenEdges(edges[longEdge], edges[shortEdge2]);
+}
+
+void DrawBetweenEdges(Edge e1,Edge e2)
+{
+    float invslope1 = (float)(e1.X2-e1.X1)/(e1.Y2-e1.Y1);
+    float invslope2 = (float)(e2.X2-e2.X1)/(e2.Y2-e2.Y1);
+    vec3 cstep1 = (e1.Color2-e1.Color1)*(1/(float)(e1.Y2-e1.Y1));
+    vec3 cstep2 = (e2.Color2-e2.Color1)*(1/(float)(e2.Y2-e2.Y1));
+    float invslopeR,invslopeL;
+    vec3 cstepl,cstepr;
+    float xl,xr,xm,y;
+
+    vec3 cl(0.0,0.0,0.0),cr(0.0,0.0,0.0);
+
+
+    if(e2.X2==e1.X2)
+    {
+        xm = e1.X1 + (float)(e2.Y1-e1.Y1)*invslope1;
+        if(xm<e2.X1)
+        {
+            xl=xm;
+            xr = e2.X2;
+            cl = e1.Color1 + (e1.Color2-e1.Color1)*((float)(e2.Y1-e1.Y1)/(e1.Y2-e1.Y1));
+            cr = e2.Color1;
+            invslopeL=invslope1;
+            invslopeR=invslope2;
+            cstepl=cstep1;
+            cstepr=cstep2;
+        }
+        else
+        {
+            xl=e2.X1;
+            xr=xm;
+            cl=e2.Color1;
+            cr=e1.Color1 + (e1.Color2-e1.Color1)*((float)(e2.Y1-e1.Y1)/(e1.Y2-e1.Y1));
+            invslopeL=invslope2;
+            invslopeR=invslope1;
+            cstepl=cstep2;
+            cstepr=cstep1;
+        }
+    }
+    else
+    {
+        xm = e1.X1 + (float)(e2.Y2-e1.Y1)*invslope1;
+        if(xm<e2.X2)
+        {
+            xl=e1.X1;;
+            xr=e2.X1;
+            cl =  e1.Color1;
+            cr =  e2.Color1;
+            invslopeL=invslope1;
+            invslopeR=invslope2;
+            cstepl=cstep1;
+            cstepr=cstep2;
+        }
+        //cr = e1.Color1 + (e1.Color2-e1.Color1)*(float(e2.Y1-e1.Y1)/(float(e1.Y2-e1.Y1)));
+        else
+        {
+            xl=e2.X1;;
+            xr=e1.X1;
+            cl =  e2.Color1;
+            cr =  e1.Color1;
+            invslopeL=invslope2;
+            invslopeR=invslope1;
+            cstepl=cstep2;
+            cstepr=cstep1;
+
+            }
+
+    }
+    y=e2.Y1;
+
+    for(int i=0; i<(e2.Y2-e2.Y1); i++)
+    {
+        cl = cl + cstepl*(float)i;
+        cr = cl + cstepr*(float)i;
+        vec3 c = cl;
+
+        for(int j=0; j<(xr-xl); j++)
+        {
+
+            c = c + (cr-cl)*((float)j/(xr-xl));
+
+           glBegin(GL_POINTS);
+           glColor3f(c.x,c.y,c.z);
+           glVertex2f(xl+j,y);
+           glEnd();
+        }
+        xl += invslopeL;
+        xr += invslopeR;
+        y  += 1;
+    }
+
+}
+
+
+
+
+
+#endif // SCANRASTER_H
+

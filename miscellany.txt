@@ -1,0 +1,18 @@
+glBegin(GL_POINTS);
+        float u=0,v=0,x1,y1,z1;
+        vec3 sp,sp1;
+        for(int k=0;k<50;k++)
+         {
+            u+=0.02;
+           for(int j=0;j<50;j++)
+           {
+               sp.x = 50*sin(3.1416*u)*cos(2*3.1416*v);
+               sp.y = 50*sin(3.1416*u)*sin(2*3.1416*v);
+               sp.z = 50*cos(3.1416*u);
+               sp1=treeto(sp);
+               glVertex2d(sp1.x,sp1.y);
+               v+=0.02;
+
+           }
+
+          }
